@@ -32,7 +32,7 @@
     "@tiptap/starter-kit": "^3.31.3",
     "@types/diff": "^7.0.2",
     "@types/jszip": "^3.4.1",
-    "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it": "^14.2.0",
     "@vercel/functions": "^3.9.8",
     "ai": "^7.0.107",
     "clsx": "^2.1.1",
