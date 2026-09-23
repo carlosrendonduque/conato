@@ -24,21 +24,48 @@ constraints, so that changes either respect them or overturn them deliberately.
 
 ## The shape of the application
 
+```mermaid
+flowchart LR
+  subgraph browser["Your browser"]
+    editor["Tiptap editor<br/>the body only"]
+    panel["Proposals panel"]
+  end
+
+  subgraph server["Next.js, your server"]
+    gate["Access gate<br/>signed cookie · rate limited"]
+    compose["Context composer<br/>three layers, every call"]
+    apply["Apply<br/>diff, then version"]
+  end
+
+  subgraph models["Models"]
+    claude["Claude"]
+    voyage["Voyage<br/>embeddings"]
+  end
+
+  subgraph pg["PostgreSQL + pgvector"]
+    files[("files · file_versions<br/>comments · candidates")]
+    chunks[("chunks<br/>vectors")]
+    inv[("invocations")]
+  end
+
+  editor -->|"save"| gate
+  panel -->|"invoke"| gate
+  gate --> compose
+  gate --> apply
+  compose -->|"canon, whole"| files
+  compose -->|"related passages"| chunks
+  compose --> claude
+  claude -->|"a proposal"| inv
+  inv --> panel
+  panel -.->|"you accept"| apply
+  apply --> files
+  files -->|"in the background"| voyage
+  voyage --> chunks
 ```
-Browser (thin)                    Server (Next.js App Router)
-┌────────────────────┐            ┌──────────────────────────────────┐
-│ Tiptap editor      │──save─────▶│ /api/files/:id/save              │
-│ Proposals panel    │──invoke───▶│ /api/invoke                      │
-│ History, comments  │            │   ├─ compose context             │
-└────────────────────┘            │   ├─ call Claude (AI SDK)        │
-                                  │   └─ store as proposal           │
-                                  ├──────────────────────────────────┤
-                                  │ PostgreSQL + pgvector (Drizzle)  │
-                                  │ files · versions · chunks ·      │
-                                  │ invocations · candidates ·       │
-                                  │ comments                         │
-                                  └──────────────────────────────────┘
-```
+
+There is deliberately no edge from Claude to `files`. The only path into the
+text runs through the panel and a diff the author confirmed. The step-by-step
+version of each flow lives in the [README](../README.md#how-it-works).
 
 The corpus lives on the server and is the source of truth. Synchronising it
 with anywhere else — a local vault, a cloud project — is the operator's

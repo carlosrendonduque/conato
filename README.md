@@ -64,6 +64,158 @@ and private notes anchored to the text.
 
 https://github.com/user-attachments/assets/f318880e-faba-4096-b8ec-2290ecc264ef
 
+## How it works
+
+The model never touches your file. It is handed a copy of the relevant corpus
+and returns text into a side panel; the only thing that writes to disk is you,
+accepting something.
+
+> **[Step through it →](https://carlosrendonduque.github.io/conato/)**
+> The same three flows as an interactive schematic: the actors light up, the
+> payload travels, and each step shows the call it actually makes.
+
+```mermaid
+flowchart LR
+  subgraph browser["Your browser"]
+    editor["Tiptap editor<br/>the body only"]
+    panel["Proposals panel"]
+  end
+
+  subgraph server["Next.js, your server"]
+    gate["Access gate<br/>signed cookie · rate limited"]
+    compose["Context composer<br/>three layers, every call"]
+    apply["Apply<br/>diff, then version"]
+  end
+
+  subgraph models["Models"]
+    claude["Claude<br/>Opus 5 · Sonnet 5 · Haiku 4.5"]
+    voyage["Voyage<br/>embeddings"]
+  end
+
+  subgraph pg["PostgreSQL + pgvector"]
+    files[("files · file_versions<br/>comments · candidates")]
+    chunks[("chunks<br/>vectors")]
+    inv[("invocations<br/>prompt, model, cost")]
+  end
+
+  editor -->|"save"| gate
+  panel -->|"invoke"| gate
+  gate --> compose
+  gate --> apply
+  compose -->|"canon, whole"| files
+  compose -->|"related passages"| chunks
+  compose --> claude
+  claude -->|"a proposal"| inv
+  inv --> panel
+  panel -.->|"you accept"| apply
+  apply --> files
+  files -->|"in the background"| voyage
+  voyage --> chunks
+```
+
+**Two things this drawing is making a point about.** There is no arrow from
+Claude to `files` — the only path into your text runs through the panel and a
+diff you confirmed, which is why a bad proposal costs you a click rather than a
+revert. And the composer reads the corpus on every single call instead of
+holding a cached context, because the alternative is a model that answers
+confidently about a paragraph you rewrote ten minutes ago.
+
+### What happens when you ask for a proposal
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant You
+  participant Editor
+  participant API
+  participant DB as Postgres
+  participant Voyage
+  participant Claude
+
+  You->>Editor: select a passage, pick an operation
+  Editor->>API: POST /api/invoke
+  Note over Editor,API: offsets are into the body,<br/>never the raw file
+  API->>DB: read the active file
+  API->>DB: read meta/canon-manifest.md
+  DB-->>API: the paths that count as canon
+  API->>DB: fetch those documents whole
+  API->>Voyage: embed the selection
+  Voyage-->>API: query vector
+  API->>DB: similarity search over the rest
+  DB-->>API: related passages
+  API->>API: compose the prompt
+  API->>Claude: the chosen model, one call
+  Claude-->>API: text
+  API->>DB: store the invocation
+  API-->>Editor: a proposal — nothing written
+```
+
+The composer is the whole argument for the tool. Firm canon goes in **whole**,
+because retrieving over a handful of small, load-bearing documents risks the
+model simply not finding the rule it needed. Everything else is retrieved,
+because prose grows without bound. The active file goes in entire, because when
+the cursor sits on a blank line the rest of the file is the context.
+
+### What happens when you accept one
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant You
+  participant Editor
+  participant API
+  participant DB as Postgres
+  participant Voyage
+
+  You->>Editor: accept
+  Editor->>Editor: render the diff
+  You->>Editor: confirm
+  Editor->>API: POST /api/invocations/:id/accept
+  API->>DB: read the file
+  API->>API: split the frontmatter off
+  API->>API: splice the text at the body offsets
+  API->>API: re-attach the frontmatter verbatim
+  API->>DB: write content + a new version
+  API-->>Editor: the updated file
+  API->>Voyage: re-embed, in the background
+  Voyage-->>DB: fresh chunks
+```
+
+The split-and-re-attach is not ceremony. Markdown reads `---` + text + `---` as
+a horizontal rule followed by a heading, so frontmatter that reaches the editor
+comes back as `## title: "..." kind: scene voice: ...` and every field is gone
+on the next keystroke. Keeping the block out of the editor and pasting it back
+untouched — rather than re-serializing it — is also what stops hand-written
+YAML from being silently reordered.
+
+### What happens while you write
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Editor
+  participant API
+  participant DB as Postgres
+  participant Voyage
+
+  Note over Editor: you stop typing
+  Editor->>API: POST /api/files/:id/save
+  API->>DB: compare content hashes
+  alt unchanged
+    API-->>Editor: no-op, no version
+  else changed
+    API->>DB: write content + a version
+    API-->>Editor: saved
+    API->>Voyage: embed the new chunks
+    Voyage-->>DB: replace this file's chunks
+  end
+```
+
+Re-embedding happens after the response, not before it, so a save never waits
+on a network call. If the embedding fails the old chunks stay and a manual
+reindex is still there — retrieval degrades to slightly stale rather than
+breaking, and your text is never what is at risk.
+
 ## What it does
 
 - **WYSIWYG Markdown editing** on Tiptap, syntax hidden where possible.
@@ -184,6 +336,75 @@ next invocation picks it up; there is no redeploy and no configuration file.
 
 See [examples/](examples/) for a working demonstration, manifest included.
 
+## API surface
+
+Every route sits behind the session cookie except `/api/health`,
+`/api/auth/login` and `/editor/<token>`. There is no public API: this is the
+editor talking to its own server.
+
+| Route | Body | Returns |
+|---|---|---|
+| `POST /api/invoke` | `{ fileId, operation, selection? \| cursorPosition?, userPrompt?, model? }` | `{ invocationId, responseText, provider, model, usage }` |
+| `POST /api/invocations/:id/accept` | — | `{ invocationId, versionId, content }` |
+| `POST /api/invocations/:id/discard` | — | `{ status }` |
+| `POST /api/invocations/:id/save-as-candidate` | — | `{ candidateId, status }` |
+| `POST /api/candidates/:id/apply` | `{ selection \| cursorPosition }` | `{ content, versionId }` |
+| `GET POST /api/files` | `{ path, content? }` | the file list, or the created file |
+| `GET PATCH DELETE /api/files/:id` | `{ path? }` | the file, the rename, or the delete |
+| `POST /api/files/:id/save` | `{ content }` | `{ versionId, contentHash, noop }` |
+| `PATCH /api/files/:id/frontmatter` | any subset of the metadata | `{ frontmatter, shiftedCount }` |
+| `GET POST /api/files/:id/versions` | `{ label }` to tag a milestone | history, or the new milestone |
+| `POST /api/files/:id/versions/:vid/restore` | — | `{ content }` |
+| `GET POST /api/files/:id/comments` | `{ body, anchorQuote, anchorPrefix?, anchorSuffix? }` | the comments, or the new one |
+| `POST /api/files/:id/share` | `{ share: boolean }` | `{ share }` |
+| `GET /api/files/:id/download` | — | the `.md` file, frontmatter included |
+| `GET /api/admin/export-corpus` | — | the whole corpus as a ZIP |
+| `POST /api/admin/reindex` | — | `{ filesIndexed, totalChunks }` |
+
+`selection` carries `{ text, range: { from, to } }`. **Those offsets are into
+the body, not the raw file** — the editor never sees the frontmatter, so the
+server splits it off before splicing and re-attaches it afterwards.
+
+Every invocation is stored with the prompt that produced it, the model that
+answered, token counts and the chunks that were retrieved. Nothing about a
+proposal is ephemeral except the proposal itself.
+
+## Day-to-day commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Editor on `http://localhost:3000` |
+| `npm run build` | Production build |
+| `npm run typecheck` | TypeScript, strict |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest |
+| `npm run format` | Prettier write |
+| `npm run db:migrate` | Apply pending migrations |
+| `npm run db:generate` | Generate a migration from the schema diff |
+| `npm run db:studio` | Browse the database |
+| `npm run corpus:ingest -- --dir <path> --slug <slug>` | Ingest a directory of Markdown |
+| `npm run corpus:reset -- --dir <path> --slug <slug>` | Wipe that corpus and re-ingest it, with a confirmation |
+| `npm run demo:reset` | The same, pointed at the bundled demo, non-interactive |
+| `docker compose up -d` | PostgreSQL 16 + pgvector |
+| `docker compose --profile app up -d --build` | The whole stack in containers |
+
+## Corpus conventions
+
+Conato is agnostic about content but expects a shape. None of it is enforced —
+a file that ignores all of it still works, it just carries less into the
+prompt.
+
+| Convention | Example | What reads it |
+|---|---|---|
+| `<base>.<lang>.md` | `capitulo_01.es.md` | language on the file, and the base name |
+| folder per voice or section | `personaje/sancho_panza.es.md` | the first path segment becomes the voice hint in the prompt |
+| `title` in frontmatter | `title: "La aventura…"` | file lists, the shared reader |
+| `kind` | `scene`, `character`, `document`, `note`… | the narrative index; constrained by the schema |
+| `act` and `order` | `act: 1`, `order: 2` | ordering in the index view; renumbering shifts neighbours |
+| `voice` | `voice: narrador` | passed to the model as a register hint |
+| `share_external: true` | — | exposes the file at `/editor/<token>` |
+| `meta/canon-manifest.md` | a list of Markdown bullets | decides what is injected whole into every prompt |
+
 ## Security model
 
 Conato's access control is **one shared secret**, not user accounts. That is
@@ -230,21 +451,6 @@ ORM · Vercel AI SDK · Tiptap · Tailwind CSS 4.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development setup and what kind of
   contributions fit.
 - [ROADMAP.md](ROADMAP.md) — what is planned and what is deliberately excluded.
-
-## Scripts
-
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Development server |
-| `npm run build` | Production build |
-| `npm run typecheck` | Type checking |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest |
-| `npm run db:migrate` | Apply migrations |
-| `npm run db:studio` | Inspect the database |
-| `npm run corpus:ingest` | Ingest a Markdown corpus |
-| `npm run corpus:reset` | Wipe a corpus and re-ingest it from disk |
-| `npm run demo:reset` | Reset the bundled demo corpus to its initial state |
 
 ## License
 
