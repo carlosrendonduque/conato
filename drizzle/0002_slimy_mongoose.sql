@@ -1,0 +1,1 @@
+ALTER TABLE "invocations" ADD COLUMN "retrieved_chunks" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: conato-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-conato}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-conato_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-conato}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - conato_pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-conato} -d ${POSTGRES_DB:-conato}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The application itself. Not started by default, because the usual
+  # development loop is `npm run dev` against the database above.
+  # Run the whole stack with:  docker compose --profile app up -d
+  app:
+    profiles: [app]
+    build:
+      context: .
+    container_name: conato-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    # Every provider key and secret comes from your .env.local.
+    env_file:
+      - .env.local
+    environment:
+      # Overrides whatever .env.local says: inside the compose network the
+      # database is reachable as `postgres`, not localhost.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-conato}:${POSTGRES_PASSWORD:-conato_dev}@postgres:5432/${POSTGRES_DB:-conato}
+
+volumes:
+  conato_pgdata:

@@ -1,0 +1,2 @@
+ALTER TABLE "files" DROP CONSTRAINT "files_kind_check";--> statement-breakpoint
+ALTER TABLE "files" ADD CONSTRAINT "files_kind_check" CHECK ("files"."kind" is null or "files"."kind" in ('character','place','scene','fragment','poem','track','video','document','note','object'));

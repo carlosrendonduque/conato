@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #fafaf9;
+  --color-foreground: #171717;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif:
+    "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", serif;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  color-scheme: light;
+}
+
+/* Estilos de prosa dentro del editor Tiptap. Austeridad consciente:
+   tipografía serif, jerarquía clara, sin colores ni decoraciones extra. */
+.conato-prose {
+  caret-color: var(--color-foreground);
+}
+.conato-prose:focus {
+  outline: none;
+}
+.conato-prose p {
+  margin: 0 0 1em 0;
+}
+.conato-prose p:last-child {
+  margin-bottom: 0;
+}
+.conato-prose h1,
+.conato-prose h2,
+.conato-prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  margin: 1.5em 0 0.5em;
+  line-height: 1.2;
+}
+.conato-prose h1 {
+  font-size: 1.6em;
+}
+.conato-prose h2 {
+  font-size: 1.3em;
+}
+.conato-prose h3 {
+  font-size: 1.1em;
+}
+.conato-prose h1:first-child,
+.conato-prose h2:first-child,
+.conato-prose h3:first-child {
+  margin-top: 0;
+}
+.conato-prose ul,
+.conato-prose ol {
+  margin: 0 0 1em 0;
+  padding-left: 1.5em;
+}
+.conato-prose ul {
+  list-style: disc;
+}
+.conato-prose ol {
+  list-style: decimal;
+}
+.conato-prose li > p {
+  margin: 0;
+}
+.conato-prose blockquote {
+  border-left: 3px solid #d4d4d4;
+  padding-left: 1em;
+  margin: 0 0 1em 0;
+  color: #525252;
+  font-style: italic;
+}
+.conato-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: #f5f5f4;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+.conato-prose hr {
+  border: none;
+  border-top: 1px solid #d4d4d4;
+  margin: 2em 0;
+}
+.conato-prose strong {
+  font-weight: 700;
+}
+.conato-prose em {
+  font-style: italic;
+}
+.conato-prose s {
+  text-decoration: line-through;
+}
+.conato-prose .ProseMirror-trailingBreak {
+  display: none;
+}
+
+/* Decoración inline para texto comentado: subrayado punteado amarillo,
+   sin background pesado para no interferir con la lectura. Cursor
+   pointer indica que es interactivo (click → abre el comentario). */
+.conato-comment-anchor {
+  text-decoration: underline dotted #d97706;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.conato-comment-anchor:hover {
+  background-color: #fef3c7;
+}

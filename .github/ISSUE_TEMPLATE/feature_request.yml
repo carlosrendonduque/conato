@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a change or addition
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Conato is deliberately narrow. Please check the "Deliberately excluded"
+        section of [ROADMAP.md](../blob/main/ROADMAP.md) first — if your idea is
+        listed there, make the case for overturning the decision rather than
+        just requesting the feature.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Conato makes hard today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I have read the "Deliberately excluded" section of ROADMAP.md
+          required: true
