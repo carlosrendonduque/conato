@@ -34,7 +34,7 @@
     "@types/jszip": "^3.4.1",
     "@types/markdown-it": "^14.1.2",
     "@vercel/functions": "^3.9.8",
-    "ai": "^6.0.174",
+    "ai": "^7.0.107",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
     "drizzle-orm": "^0.45.3",
