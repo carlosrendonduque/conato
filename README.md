@@ -29,6 +29,41 @@ invocation automatically carries your canon, semantically relevant passages from
 the rest of your material, and the full file you are editing. Answers arrive as
 **proposals in a side panel** — never written straight into your text.
 
+## See it work
+
+Six short clips, each one feature, recorded against the bundled demo corpus.
+The walkthrough that produced them is in [docs/demo.md](docs/demo.md).
+
+**1 · The editor** — Markdown without the punctuation, and metadata that stays
+out of the way.
+
+https://github.com/user-attachments/assets/8437d1f8-63d0-4760-8129-549d655d798b
+
+**2 · The five operations** — expand, condense, rewrite, continue and free
+prompt, over a selection or at the cursor.
+
+https://github.com/user-attachments/assets/ba35c939-20fc-4b3c-8303-fa4eaab3f324
+
+**3 · Proposals** — accept behind a visual diff, discard, or keep as a
+candidate that outlives the session.
+
+https://github.com/user-attachments/assets/0cb40f5b-344d-4de1-9085-023ff37a58db
+
+**4 · Choosing a model** — the same selection sent to Opus 5 and then Sonnet 5,
+both answers side by side.
+
+https://github.com/user-attachments/assets/aa1df97a-7d39-4c6f-a4de-ad6244925d40
+
+**5 · Context** — why the proposals sound like the work: canon injected whole,
+the rest of the corpus retrieved by similarity, the active file entire.
+
+https://github.com/user-attachments/assets/513d6f37-4f77-4c5b-b1b8-0b4d123af8e7
+
+**6 · Versions and comments** — every save kept, milestones tagged, restore,
+and private notes anchored to the text.
+
+https://github.com/user-attachments/assets/f318880e-faba-4096-b8ec-2290ecc264ef
+
 ## What it does
 
 - **WYSIWYG Markdown editing** on Tiptap, syntax hidden where possible.
