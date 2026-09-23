@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A step-through schematic of the three paths inside Conato: asking for a proposal, accepting one, and writing.">
+<meta name="color-scheme" content="light dark">
+<title>Conato Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #eef1f4;
+    --surface: #ffffff;
+    --surface-sunk: #e4e9ee;
+    --ink: #171b21;
+    --muted: #5b6672;
+    --faint: #8794a1;
+    --line: #d3dae1;
+    --line-strong: #b8c3cd;
+    --signal: #0f766e;
+    --signal-soft: #d3ece8;
+    --guard: #a16207;
+    --guard-soft: #f4e7cd;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1418;
+      --surface: #171e24;
+      --surface-sunk: #121920;
+      --ink: #e6ebf0;
+      --muted: #97a4b1;
+      --faint: #6d7c8a;
+      --line: #27313b;
+      --line-strong: #3a4753;
+      --signal: #2dd4bf;
+      --signal-soft: #10302e;
+      --guard: #d9a441;
+      --guard-soft: #33270f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1418;
+    --surface: #171e24;
+    --surface-sunk: #121920;
+    --ink: #e6ebf0;
+    --muted: #97a4b1;
+    --faint: #6d7c8a;
+    --line: #27313b;
+    --line-strong: #3a4753;
+    --signal: #2dd4bf;
+    --signal-soft: #10302e;
+    --guard: #d9a441;
+    --guard-soft: #33270f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    width: min(100% - 2rem, 76rem);
+    margin-inline: auto;
+    padding-block: clamp(1.75rem, 4vw, 3rem) 4rem;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 0.35rem;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    margin: 0;
+    max-width: 34rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  /* ---------- flow tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin: 1.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    flex-wrap: wrap;
+  }
+  .tab {
+    font: 500 0.9rem/1 var(--sans);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.55rem 1.05rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .tab:hover { border-color: var(--line-strong); color: var(--ink); }
+  .tab[aria-selected="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+  .tab .count {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    opacity: 0.7;
+  }
+
+  /* ---------- stage ---------- */
+  .stage-scroll {
+    margin-top: 1rem;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    background-image:
+      linear-gradient(var(--surface-sunk) 1px, transparent 1px),
+      linear-gradient(90deg, var(--surface-sunk) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+  }
+  .stage { display: block; width: 100%; min-width: 760px; height: auto; }
+
+  .lane-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    fill: var(--faint);
+  }
+  .edge-base { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0.85; }
+  .edge-live { fill: none; stroke: var(--signal); stroke-width: 2.5; stroke-linecap: round; }
+  .edge-live.is-guard { stroke: var(--guard); }
+
+  .node rect {
+    fill: var(--surface);
+    stroke: var(--line-strong);
+    stroke-width: 1.5;
+    rx: 8;
+  }
+  .node.is-db rect { rx: 14; }
+  .node.is-lit rect { stroke: var(--signal); stroke-width: 2.5; }
+  .node.is-lit.is-guard rect { stroke: var(--guard); }
+  .node .n-name { font: 600 14px var(--sans); fill: var(--ink); }
+  .node .n-sub { font: 400 11px var(--mono); fill: var(--faint); }
+
+  .token circle { fill: var(--signal); }
+  .token.is-guard circle { fill: var(--guard); }
+  .token text { font: 500 11px var(--mono); fill: var(--bg); }
+
+  .edge-caption {
+    font: 500 12px var(--mono);
+    fill: var(--ink);
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+  }
+  .btn {
+    font: 500 0.88rem/1 var(--sans);
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 7px;
+    padding: 0.6rem 0.95rem;
+    cursor: pointer;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--ink); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-play { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .counter {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- step rail ---------- */
+  .rail {
+    display: flex;
+    gap: 0.3rem;
+    margin: 1.1rem 0 0;
+    padding: 0 0 0.35rem;
+    list-style: none;
+    overflow-x: auto;
+  }
+  .rail button {
+    font: 500 0.78rem/1 var(--mono);
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    width: 2.1rem;
+    height: 2.1rem;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .rail button:hover { border-color: var(--line-strong); color: var(--ink); }
+  .rail button[aria-current="step"] {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: var(--surface);
+  }
+  .rail button.is-done { color: var(--ink); border-color: var(--line-strong); }
+
+  /* ---------- note ---------- */
+  .note {
+    margin-top: 1.1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 1rem 2rem;
+    align-items: start;
+  }
+  @media (max-width: 720px) { .note { grid-template-columns: 1fr; } }
+  .note h2 {
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.4rem;
+  }
+  .note p { margin: 0; color: var(--muted); max-width: 62ch; }
+  .note .call {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--signal);
+    border-radius: 6px;
+    padding: 0.7rem 0.85rem;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--ink);
+  }
+  .note .call.is-guard { border-left-color: var(--guard); }
+  .tagline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--guard);
+    background: var(--guard-soft);
+    border-radius: 999px;
+    padding: 0.22rem 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ---------- footer notes ---------- */
+  .after {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 1.5rem 2.5rem;
+  }
+  .after h3 {
+    font-size: 0.78rem;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 500;
+    margin: 0 0 0.45rem;
+  }
+  .after p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .after a { color: var(--ink); text-underline-offset: 0.2em; }
+
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; border-radius: 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.001ms !important; }
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Conato · playbook</p>
+      <h1>What happens when you ask</h1>
+    </div>
+    <p class="standfirst">
+      The model never touches your file. It is handed a copy of what is relevant and
+      returns text into a panel; the only thing that writes to disk is you, accepting
+      something. Step through any of the three paths below.
+    </p>
+  </header>
+
+  <ul class="tabs" role="tablist" aria-label="Flow">
+    <li role="presentation">
+      <button class="tab" role="tab" id="tab-invoke" aria-controls="panel" aria-selected="true" data-flow="invoke">
+        Asking for a proposal <span class="count">12 steps</span>
+      </button>
+    </li>
+    <li role="presentation">
+      <button class="tab" role="tab" id="tab-accept" aria-controls="panel" aria-selected="false" data-flow="accept">
+        Accepting one <span class="count">10 steps</span>
+      </button>
+    </li>
+    <li role="presentation">
+      <button class="tab" role="tab" id="tab-save" aria-controls="panel" aria-selected="false" data-flow="save">
+        Just writing <span class="count">8 steps</span>
+      </button>
+    </li>
+  </ul>
+
+  <div id="panel" role="tabpanel" aria-labelledby="tab-invoke">
+    <div class="stage-scroll">
+      <svg class="stage" viewBox="0 0 1180 470" role="img" aria-labelledby="stage-title">
+        <title id="stage-title">Schematic of Conato's actors and the path the current step takes</title>
+        <g id="laneLabels"></g>
+        <g id="baseEdges"></g>
+        <path id="liveEdge" class="edge-live" d="" />
+        <g id="nodes"></g>
+        <text id="edgeCaption" class="edge-caption" text-anchor="middle"></text>
+        <g id="token" class="token" opacity="0">
+          <circle r="9"></circle>
+        </g>
+      </svg>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prev" type="button">← Back</button>
+      <button class="btn btn-play" id="play" type="button">Play</button>
+      <button class="btn" id="next" type="button">Next →</button>
+      <span class="counter" id="counter">Step 1 of 11</span>
+    </div>
+
+    <ol class="rail" id="rail"></ol>
+
+    <div class="note">
+      <div>
+        <span class="tagline" id="tagline" hidden></span>
+        <h2 id="noteTitle">—</h2>
+        <p id="noteBody">—</p>
+      </div>
+      <div class="call" id="noteCall">—</div>
+    </div>
+  </div>
+
+  <div class="after">
+    <div>
+      <h3>Why the model cannot write</h3>
+      <p>
+        There is no path from Claude to your file. Output becomes a row in
+        <code>invocations</code> and a card in the panel; applying it takes a diff you
+        confirmed. The cost of a bad suggestion is a glance, not a revert.
+      </p>
+    </div>
+    <div>
+      <h3>Why canon goes in whole</h3>
+      <p>
+        Retrieval is how you search a corpus that grows. But the documents that define
+        the work are few and load-bearing, and a search that misses one is a model
+        contradicting your own rules. Those go in entire, every call, on purpose.
+      </p>
+    </div>
+    <div>
+      <h3>Read the code</h3>
+      <p>
+        <a href="https://github.com/carlosrendonduque/conato">github.com/carlosrendonduque/conato</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var NODES = {
+    you:    { x: 84,   y: 300, w: 128, h: 58, name: "You",       sub: "writing" },
+    editor: { x: 286,  y: 300, w: 168, h: 58, name: "Editor",    sub: "Tiptap · the body only" },
+    api:    { x: 540,  y: 300, w: 152, h: 58, name: "Conato",    sub: "your server" },
+    claude: { x: 796,  y: 92,  w: 152, h: 58, name: "Claude",    sub: "Opus · Sonnet · Haiku" },
+    voyage: { x: 796,  y: 206, w: 152, h: 58, name: "Voyage",    sub: "embeddings" },
+    files:  { x: 1026, y: 120, w: 176, h: 62, name: "Your text",  sub: "files · versions", db: true },
+    chunks: { x: 1026, y: 360, w: 176, h: 62, name: "Retrieval",  sub: "chunks · vectors", db: true }
+  };
+
+  var LANES = [
+    { x: 84,   label: "Author" },
+    { x: 286,  label: "Browser" },
+    { x: 540,  label: "Server" },
+    { x: 796,  label: "Models" },
+    { x: 1026, label: "Postgres" }
+  ];
+
+  var BASE_EDGES = [
+    ["you", "editor"], ["editor", "api"], ["api", "claude"], ["api", "voyage"],
+    ["api", "files"], ["api", "chunks"]
+  ];
+
+  var FLOWS = {
+    invoke: {
+      label: "Asking for a proposal",
+      steps: [
+        { from: "you", to: "editor", tag: "select",
+          title: "You select a passage and choose an operation",
+          body: "Expand, condense, rewrite, continue from the cursor, or say what you want in your own words. There is deliberately no “improve”: improving means the model deciding what is better, and that is the one judgement the tool exists to leave with you.",
+          call: "rewrite · “—¿Qué gigantes? —dijo Sancho Panza.”" },
+        { from: "editor", to: "api", tag: "invoke",
+          title: "The editor sends an offset, not a document",
+          body: "The range is measured in the body of the file, because the editor never sees the frontmatter. That distinction is load-bearing: an offset measured against the raw file would land six lines of YAML off, in the middle of the title.",
+          call: "POST /api/invoke\n{ fileId, operation, selection: { text, range } }" },
+        { from: "api", to: "files", tag: "active file",
+          title: "The whole file comes along, not just the selection",
+          body: "When the cursor sits on a blank line at the end of a scene, the selection carries no information at all. What the model needs is everything written above it.",
+          call: "select content from files where id = $1" },
+        { from: "api", to: "files", tag: "manifest",
+          title: "A file in your corpus decides what counts as canon",
+          body: "meta/canon-manifest.md is a list of Markdown bullets. You edit it inside the editor like any other document and the next invocation obeys it. Canon is data you can move, not configuration you redeploy.",
+          call: "read meta/canon-manifest.md" },
+        { from: "files", to: "api", tag: "canon, whole",
+          title: "Those documents go in entire",
+          body: "Firm canon is small and load-bearing — the rules of the world, the voices, what is already settled. Retrieving over it would risk the model not finding the one rule that mattered, so it is injected whole and paid for on every call.",
+          call: "3 documents · ~900 tokens" },
+        { from: "api", to: "voyage", tag: "embed",
+          title: "The selection becomes a vector",
+          body: "With a cursor and no selection, a window of the surrounding text is used instead, so that “continue from here” still has something to search with.",
+          call: "embed(selection)" },
+        { from: "voyage", to: "chunks", tag: "similarity",
+          title: "The rest of the corpus is searched, not injected",
+          body: "Prose grows without bound; canon does not. This is the half of the context that scales — passages from anywhere in the work that are actually related to where you are standing.",
+          call: "order by embedding <=> $1 limit k" },
+        { from: "chunks", to: "api", tag: "passages",
+          title: "Only what is related comes back",
+          body: "Each passage arrives with its path and similarity score, and both are stored on the invocation afterwards, so you can go back and see what the model was looking at when it wrote something good.",
+          call: "[{ path, similarity, text }]" },
+        { from: "api", to: "api", tag: "compose", guard: true,
+          title: "Three layers become one prompt",
+          body: "Preamble, canon whole, retrieved passages, the complete active file, where the cursor is, which operation, and anything you typed. Assembled fresh every time rather than cached, because a cached context is a model answering confidently about a paragraph you rewrote ten minutes ago.",
+          call: "buildSystemPrompt({ canonFiles, relevantChunks, activeFile, selection })" },
+        { from: "api", to: "claude", tag: "one model",
+          title: "One model, the one you picked",
+          body: "Not four at once. Sending the same prompt everywhere gives you four answers to compare and no reason to prefer any of them. Read the first; if it did not satisfy you, ask another and the panel keeps both.",
+          call: "claude-opus-5" },
+        { from: "claude", to: "api", tag: "text",
+          title: "What comes back is text, and nothing else happens to it",
+          body: "The invocation is stored with its prompt, its model, its token counts and the passages it retrieved. The proposal is a row, not an edit.",
+          call: "{ responseText, usage }" },
+        { from: "api", to: "editor", tag: "a proposal",
+          title: "It lands in the panel, never in your file",
+          body: "This is the whole design in one arrow. Your text on disk is untouched; a bad suggestion costs you a glance, not a revert. Nothing is written until you say so.",
+          call: "{ invocationId, responseText, model }" }
+      ]
+    },
+
+    accept: {
+      label: "Accepting one",
+      steps: [
+        { from: "you", to: "editor", tag: "accept",
+          title: "You accept — and get asked once more",
+          body: "Accepting does not apply anything. It renders a diff: what leaves in red, what arrives in green. The confirmation exists because reading a proposal and seeing it against your own sentence are different acts.",
+          call: "diffWords(original, proposal)" },
+        { from: "editor", to: "api", tag: "confirm",
+          title: "Only the confirmation reaches the server",
+          body: "The proposal has been sitting in a database table since it was generated. What travels now is a decision about it.",
+          call: "POST /api/invocations/:id/accept" },
+        { from: "api", to: "files", tag: "read",
+          title: "The file is read fresh",
+          body: "Not the copy the editor holds. If you kept writing between invoking and accepting, the server works from what is actually stored.",
+          call: "select content from files where id = $1" },
+        { from: "api", to: "api", tag: "split", guard: true,
+          title: "The frontmatter is lifted off first",
+          body: "Markdown reads --- + text + --- as a horizontal rule followed by a heading. Left in place, your metadata comes back as “## title: … kind: scene voice: …” and every field is gone. It is separated before anything is spliced.",
+          call: "splitFrontmatter(content)" },
+        { from: "api", to: "api", tag: "splice", guard: true,
+          title: "The text is replaced exactly where you selected",
+          body: "The offsets were measured in the body and are applied to the body. For “continue” the range has zero length and the text is inserted rather than replacing anything.",
+          call: "body.slice(0, from) + proposal + body.slice(to)" },
+        { from: "api", to: "api", tag: "re-attach", guard: true,
+          title: "The block goes back untouched",
+          body: "Re-attached verbatim, not re-serialized. Your hand-written YAML keeps its key order and its quotes, because a tool that quietly reformats your metadata is a tool you stop trusting with your prose.",
+          call: "joinFrontmatter(frontmatter, newBody)" },
+        { from: "api", to: "files", tag: "write",
+          title: "The new text and a version, in one transaction",
+          body: "Every accepted proposal leaves a version behind. You can read it later, tag it as a milestone, or roll the file back to before you said yes.",
+          call: "update files · insert file_versions" },
+        { from: "api", to: "editor", tag: "updated",
+          title: "The editor reloads from what was written",
+          body: "And splits the frontmatter off again on the way in. Every path that puts server content into the editor goes through the same function — one rule, not five copies of it.",
+          call: "loadRawContent(content)" },
+        { from: "api", to: "voyage", tag: "re-embed",
+          title: "Retrieval catches up afterwards",
+          body: "Started after the response, so accepting never waits on it. If it fails, the old chunks stay and retrieval is briefly stale — which is a far better failure than your text waiting on someone else's API.",
+          call: "scheduleAutoReindex(fileId)" },
+        { from: "voyage", to: "chunks", tag: "fresh chunks",
+          title: "The file's vectors are replaced",
+          body: "Old chunks are deleted and new ones written in one transaction, so the next invocation retrieves the paragraph you just accepted rather than the one it replaced.",
+          call: "delete then insert, atomically" }
+      ]
+    },
+
+    save: {
+      label: "Just writing",
+      steps: [
+        { from: "you", to: "editor", tag: "type",
+          title: "You write, and nothing asks for your attention",
+          body: "No save button, no dialog, no suggestion appearing under the cursor. The tool proposes only when asked; the rest of the time it is an editor.",
+          call: "—" },
+        { from: "editor", to: "editor", tag: "debounce", guard: true,
+          title: "It waits for you to stop",
+          body: "A pause, not a keystroke count. Saving on every character would make the version history a log of typing rather than a record of drafts.",
+          call: "debounce(AUTOSAVE_DEBOUNCE_MS)" },
+        { from: "editor", to: "api", tag: "save",
+          title: "The body goes up, the frontmatter goes back on",
+          body: "The editor holds only the body. The block it lifted off when the file was opened is re-attached on the way out, so what is stored is always a complete, valid document.",
+          call: "POST /api/files/:id/save\n{ content: joinFrontmatter(fm, body) }" },
+        { from: "api", to: "files", tag: "compare",
+          title: "Unchanged content is not a save",
+          body: "Hashes are compared first. Moving the cursor around, or an autosave that fires after you undid your own edit, does not earn a version.",
+          call: "sha256(content) === stored hash ? noop" },
+        { from: "api", to: "files", tag: "version",
+          title: "Real changes become a version",
+          body: "Linked to the one before it, so the history is a chain. Any of them can be tagged as a milestone with a label, which is how the drafts you care about stay findable among the hundreds you do not.",
+          call: "insert file_versions · parent_version_id" },
+        { from: "api", to: "editor", tag: "saved",
+          title: "The header says saved, and that is the end of it",
+          body: "The response returns before any embedding work begins. What you notice is a word changing in the header; what you do not notice is the rest.",
+          call: "{ versionId, contentHash, noop: false }" },
+        { from: "api", to: "voyage", tag: "embed",
+          title: "The file is re-embedded in the background",
+          body: "This is what keeps retrieval honest while you work. Without it, the model would answer about a chapter as it was the last time someone pressed a button.",
+          call: "waitUntil(indexFile(fileId))" },
+        { from: "voyage", to: "chunks", tag: "chunks",
+          title: "And the next invocation sees what you just wrote",
+          body: "Which closes the loop: the prose you are writing now is the corpus the next proposal is built from.",
+          call: "replace chunks for this file" }
+      ]
+    }
+  };
+
+  var svg = document.querySelector(".stage");
+  var elNodes = document.getElementById("nodes");
+  var elBase = document.getElementById("baseEdges");
+  var elLanes = document.getElementById("laneLabels");
+  var elLive = document.getElementById("liveEdge");
+  var elToken = document.getElementById("token");
+  var elCaption = document.getElementById("edgeCaption");
+  var elRail = document.getElementById("rail");
+  var elCounter = document.getElementById("counter");
+  var elTitle = document.getElementById("noteTitle");
+  var elBody = document.getElementById("noteBody");
+  var elCall = document.getElementById("noteCall");
+  var elTag = document.getElementById("tagline");
+  var btnPrev = document.getElementById("prev");
+  var btnNext = document.getElementById("next");
+  var btnPlay = document.getElementById("play");
+  var NS = "http://www.w3.org/2000/svg";
+
+  var flowKey = "invoke";
+  var index = 0;
+  var playing = false;
+  var timer = null;
+  var raf = null;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  // Where a straight line from one node to another crosses the first node's box.
+  function anchor(a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y;
+    if (dx === 0 && dy === 0) return { x: a.x, y: a.y };
+    var hw = a.w / 2 + 6, hh = a.h / 2 + 6;
+    var sx = dx === 0 ? Infinity : hw / Math.abs(dx);
+    var sy = dy === 0 ? Infinity : hh / Math.abs(dy);
+    var s = Math.min(sx, sy);
+    return { x: a.x + dx * s, y: a.y + dy * s };
+  }
+
+  function pathBetween(fromKey, toKey) {
+    var a = NODES[fromKey], b = NODES[toKey];
+    if (fromKey === toKey) {
+      var t = a.y - a.h / 2 - 6;
+      return "M " + (a.x - 34) + " " + t +
+             " C " + (a.x - 34) + " " + (t - 52) + ", " +
+                     (a.x + 34) + " " + (t - 52) + ", " +
+                     (a.x + 34) + " " + t;
+    }
+    var p = anchor(a, b), q = anchor(b, a);
+    return "M " + p.x + " " + p.y + " L " + q.x + " " + q.y;
+  }
+
+  function drawStatic() {
+    LANES.forEach(function (lane) {
+      var t = el("text", { x: lane.x, y: 30, class: "lane-label", "text-anchor": "middle" }, elLanes);
+      t.textContent = lane.label;
+    });
+    BASE_EDGES.forEach(function (pair) {
+      el("path", { class: "edge-base", d: pathBetween(pair[0], pair[1]) }, elBase);
+    });
+    Object.keys(NODES).forEach(function (key) {
+      var n = NODES[key];
+      var g = el("g", { class: "node" + (n.db ? " is-db" : ""), "data-node": key }, elNodes);
+      el("rect", { x: n.x - n.w / 2, y: n.y - n.h / 2, width: n.w, height: n.h }, g);
+      var name = el("text", { x: n.x, y: n.y - 2, class: "n-name", "text-anchor": "middle" }, g);
+      name.textContent = n.name;
+      var sub = el("text", { x: n.x, y: n.y + 16, class: "n-sub", "text-anchor": "middle" }, g);
+      sub.textContent = n.sub;
+    });
+  }
+
+  function buildRail() {
+    elRail.textContent = "";
+    FLOWS[flowKey].steps.forEach(function (step, i) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = String(i + 1);
+      b.setAttribute("aria-label", "Step " + (i + 1) + ": " + step.title);
+      b.addEventListener("click", function () { stop(); go(i); });
+      li.appendChild(b);
+      elRail.appendChild(li);
+    });
+  }
+
+  function animateToken(d, guard) {
+    if (raf) cancelAnimationFrame(raf);
+    elToken.classList.toggle("is-guard", !!guard);
+    var probe = el("path", { d: d }, svg);
+    var len = probe.getTotalLength();
+    var start = null;
+    var dur = reduce ? 0 : Math.min(1100, 340 + len * 1.6);
+
+    function frame(ts) {
+      if (start === null) start = ts;
+      var t = dur === 0 ? 1 : Math.min(1, (ts - start) / dur);
+      var eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      var pt = probe.getPointAtLength(eased * len);
+      elToken.setAttribute("transform", "translate(" + pt.x + "," + pt.y + ")");
+      elToken.setAttribute("opacity", "1");
+      if (t < 1) { raf = requestAnimationFrame(frame); }
+      else { probe.remove(); raf = null; }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function go(i) {
+    var steps = FLOWS[flowKey].steps;
+    index = Math.max(0, Math.min(steps.length - 1, i));
+    var step = steps[index];
+    var d = pathBetween(step.from, step.to);
+
+    elLive.setAttribute("d", d);
+    elLive.classList.toggle("is-guard", !!step.guard);
+
+    Array.prototype.forEach.call(elNodes.children, function (g) {
+      var key = g.getAttribute("data-node");
+      var lit = key === step.from || key === step.to;
+      g.classList.toggle("is-lit", lit);
+      g.classList.toggle("is-guard", lit && !!step.guard);
+    });
+
+    var a = NODES[step.from], b = NODES[step.to];
+    var mid = step.from === step.to
+      ? { x: a.x, y: a.y - a.h / 2 - 48 }
+      : { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 12 };
+    elCaption.setAttribute("x", mid.x);
+    elCaption.setAttribute("y", mid.y);
+    elCaption.textContent = step.tag;
+
+    animateToken(d, step.guard);
+
+    elTitle.textContent = step.title;
+    elBody.textContent = step.body;
+    elCall.textContent = step.call;
+    elCall.classList.toggle("is-guard", !!step.guard);
+    if (step.guard) {
+      elTag.hidden = false;
+      elTag.textContent = "isolation boundary";
+    } else {
+      elTag.hidden = true;
+    }
+
+    elCounter.textContent = "Step " + (index + 1) + " of " + steps.length;
+    btnPrev.disabled = index === 0;
+    btnNext.disabled = index === steps.length - 1;
+
+    Array.prototype.forEach.call(elRail.querySelectorAll("button"), function (b, i2) {
+      if (i2 === index) b.setAttribute("aria-current", "step");
+      else b.removeAttribute("aria-current");
+      b.classList.toggle("is-done", i2 < index);
+    });
+  }
+
+  function stop() {
+    playing = false;
+    if (timer) { clearInterval(timer); timer = null; }
+    btnPlay.textContent = "Play";
+  }
+
+  function play() {
+    var steps = FLOWS[flowKey].steps;
+    if (index === steps.length - 1) go(0);
+    playing = true;
+    btnPlay.textContent = "Pause";
+    timer = setInterval(function () {
+      if (index >= steps.length - 1) { stop(); return; }
+      go(index + 1);
+    }, reduce ? 1600 : 2400);
+  }
+
+  function setFlow(key) {
+    stop();
+    flowKey = key;
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+      t.setAttribute("aria-selected", String(t.dataset.flow === key));
+    });
+    document.getElementById("panel").setAttribute("aria-labelledby", "tab-" + key);
+    buildRail();
+    go(0);
+  }
+
+  btnPrev.addEventListener("click", function () { stop(); go(index - 1); });
+  btnNext.addEventListener("click", function () { stop(); go(index + 1); });
+  btnPlay.addEventListener("click", function () { playing ? stop() : play(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+    t.addEventListener("click", function () { setFlow(t.dataset.flow); });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight") { stop(); go(index + 1); }
+    if (e.key === "ArrowLeft") { stop(); go(index - 1); }
+  });
+
+  drawStatic();
+  buildRail();
+  go(0);
+})();
+
+</script>
+</body>
+</html>
